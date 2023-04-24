@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <vector>
+#include <cstring>
 
 using namespace std;
 
@@ -54,7 +55,7 @@ bool rabinMiller(uint64_t n) {
     a = modPow(a, u, n);
     if(a == 1)
         return true;
-    for(int i = 0; i < t; i++) {
+    for(uint64_t i = 0; i < t; i++) {
         uint64_t last = a;
         a = modPow(a, 2, n);
         if(a == 1) {
@@ -93,21 +94,35 @@ uint64_t encrypt(uint64_t x, uint64_t e, uint64_t N) {
     return modPow((uint64_t)x, e, N);
 }
 string encrypt(const string& s, uint64_t e, uint64_t N) {
-    string result;
-    result.resize(s.length());
-    for(int i = 0; i < s.length(); i++)
-        result[i] = encrypt(s[i], N, e);
-    return result;
+    uint64_t y[s.length()];
+    for(size_t i = 0; i < s.length(); i++) {
+        y[i] = encrypt((uint64_t)s[i], e, N);
+    }
+    char cStr[s.length() * 8];
+    memcpy(cStr, y, s.length()*8);
+    string cppStr{};
+    cppStr.resize(s.length()*8);
+    for(int i = 0; i < s.length()*8; i++)
+        cppStr[i] = cStr[i];
+    cout << cppStr<< endl;
+    return cppStr;
 }
 uint64_t decrypt(uint64_t x, uint64_t d, uint64_t N) {
     return modPow(x, d, N);
 }
 string decrypt(const string& s, uint64_t d, uint64_t N) {
-    string result;
-    result.resize(s.length());
-    for(int i = 0; i < s.length(); i++)
-        result[i] = decrypt(s[i], N, d);
-    return result;
+    char result[s.length() / 8];
+    const char *cStr = s.c_str();
+    for(size_t i = 0; i < s.length() / 8; i++) {
+        uint64_t x;
+        memcpy(&x, cStr + i*8, 8);
+        result[i] = (char)decrypt(x, d, N);
+        cout << result[i];
+    }
+    cout <<"'"<< endl;
+    string cppString(result);
+    cout << cppString<<endl;
+    return cppString;
 }
 
 int main() {
@@ -125,9 +140,55 @@ int main() {
     cout << "d = "<< d << endl;
     cout << "N = " << N << endl;
 
-    uint64_t x = 4200;
+    uint64_t x = 97;
     uint64_t y = encrypt(x, e, N);
     uint64_t xx = decrypt(y, d, N);
     cout << (uint64_t)x << endl << (uint64_t)y << endl << (uint64_t)xx << endl;
 
+    string s = "aaabbcb";
+    cout << "s='" << s << "'" << endl;
+    string ss = encrypt(s, e, N);
+    cout << "ss='" << ss << "'" << endl;
+    string sss = decrypt(ss, e, N);
+    cout << "sss='" << sss << "'" << endl;
 }
+
+
+/*
+
+string encrypt(const string& s, uint64_t e, uint64_t N) {
+    string result;
+    result.resize(s.length() * 8);
+    for(size_t i = 0; i < s.length(); i++) {
+        // char -> char x 8
+        cout << "original char ="<<s[i] << "="<<(uint32_t)s[i] << endl;;
+        uint64_t y = encrypt((uint64_t)s[i], e, N);
+        cout << "encrypt ="<<y<<endl;
+        for(int j = 0; j < 8; j++) {
+            cout <<"="<< ((uint32_t)((y >> (7-j)*8) & 255))<<"="<< ((uint8_t)((y >> (7-j)*8) & 255)) << endl;
+            result[i*8 + j] = (y >> (7-j)*8) & 255;
+        }
+    }
+    return result;
+}
+uint64_t decrypt(uint64_t x, uint64_t d, uint64_t N) {
+    return modPow(x, d, N);
+}
+string decrypt(const string& s, uint64_t d, uint64_t N) {
+    string result;
+    result.resize(s.length() / 8);
+    cout << "decr string="<<s<< endl;
+    for(size_t i = 0; i < s.length() / 8; i++) {
+        uint64_t x = 0;
+        for(int j = 0; j < 8; j++) {
+            cout<<"x=" << x << endl;
+            cout << "byte="<<(uint64_t)s[i*8 + j]<<endl;
+            x |= (uint64_t)s[i*8 + j] << (7 - j)*8;
+        }
+        cout << "was encrypted="<<x<<"="<<(uint8_t)x<<endl;
+        result[i] = decrypt(x, d, N);
+        cout << "wich is="<<result[i]<<endl;
+    }
+    return result;
+}
+*/
