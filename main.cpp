@@ -13,13 +13,12 @@ const size_t N = 210;
 __uint128_t modPow(__uint128_t base, __uint128_t exp, __uint128_t m) {
     if(exp == 0) {
         return 1;
-    } else  {
-        __uint128_t tmp = modPow(base, exp/2, m);
-        if(exp % 2 == 0) {
-            return (tmp * tmp % m ) ;
-        } else {
-            return (tmp * tmp * base % m );
-        }
+    }
+    __uint128_t tmp = modPow(base, exp/2, m);
+    if(exp % 2 == 0) {
+        return (tmp * tmp) % m  ;
+    } else {
+        return ((tmp * tmp) % m ) * base % m;
     }
 } // returns (base ^ exp) mod m
 
@@ -90,20 +89,20 @@ int64_t inverse(int64_t a, int64_t m) {
     return a2;
 } // returns modular inverse
 
-char encrypt(char x, uint64_t N, uint64_t e) {
+uint64_t encrypt(uint64_t x, uint64_t e, uint64_t N) {
     return modPow((uint64_t)x, e, N);
 }
-string encrypt(const string& s, uint64_t N, uint64_t e) {
+string encrypt(const string& s, uint64_t e, uint64_t N) {
     string result;
     result.resize(s.length());
     for(int i = 0; i < s.length(); i++)
         result[i] = encrypt(s[i], N, e);
     return result;
 }
-char decrypt(char x, uint64_t N, uint64_t d) {
-    return modPow((uint64_t)x, d, N);
+uint64_t decrypt(uint64_t x, uint64_t d, uint64_t N) {
+    return modPow(x, d, N);
 }
-string decrypt(const string& s, uint64_t N, uint64_t d) {
+string decrypt(const string& s, uint64_t d, uint64_t N) {
     string result;
     result.resize(s.length());
     for(int i = 0; i < s.length(); i++)
@@ -115,23 +114,20 @@ int main() {
     uint64_t N, p, q, e, d;
     p = 12004991;
     q = 12004999;
-    N = p*q;
     e = 7;
+    /*
+    p = 5;
+    q = 7;
+    e = 5;
+    */
+    N = p*q;
     d = (uint64_t)inverse((int64_t)e, (int64_t)(p - 1)*(q-1));
-    cout << d << endl;
-    cout << N << endl;
+    cout << "d = "<< d << endl;
+    cout << "N = " << N << endl;
 
-    char c = 'q';
-    char cc = encrypt(c, N, e);
-    char ccc = decrypt(c, N ,d);
-    cout << c << endl << cc << endl << ccc << endl;
-
-
-    string str = "Don't panic!";
-    cout << str << endl;
-    string y = encrypt(str, N, e);
-    cout<<"y='" << y<<"'" << endl;
-    cout <<"x[0]='" <<(int)decrypt(y[0], N, d)<<"'" << endl;
-    cout<<"x='" << encrypt(y, N, d)<<"'" << endl;
+    uint64_t x = 4200;
+    uint64_t y = encrypt(x, e, N);
+    uint64_t xx = decrypt(y, d, N);
+    cout << (uint64_t)x << endl << (uint64_t)y << endl << (uint64_t)xx << endl;
 
 }
