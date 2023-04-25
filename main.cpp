@@ -93,37 +93,55 @@ int64_t inverse(int64_t a, int64_t m) {
 uint64_t encrypt(uint64_t x, uint64_t e, uint64_t N) {
     return modPow((uint64_t)x, e, N);
 }
-string encrypt(const string& s, uint64_t e, uint64_t N) {
-    uint64_t y[s.length()];
-    for(size_t i = 0; i < s.length(); i++) {
-        y[i] = encrypt((uint64_t)s[i], e, N);
-    }
-    char cStr[s.length() * 8];
-    memcpy(cStr, y, s.length()*8);
-    string cppStr{};
-    cppStr.resize(s.length()*8);
-    for(int i = 0; i < s.length()*8; i++)
-        cppStr[i] = cStr[i];
-    cout << cppStr<< endl;
-    return cppStr;
-}
 uint64_t decrypt(uint64_t x, uint64_t d, uint64_t N) {
     return modPow(x, d, N);
 }
-string decrypt(const string& s, uint64_t d, uint64_t N) {
-    char result[s.length() / 8];
-    const char *cStr = s.c_str();
-    for(size_t i = 0; i < s.length() / 8; i++) {
-        uint64_t x;
-        memcpy(&x, cStr + i*8, 8);
-        result[i] = (char)decrypt(x, d, N);
-        cout << result[i];
+
+string encrypt(const string& s, uint64_t e, uint64_t N) {
+    size_t len = s.length();
+    uint64_t y[len];
+    for(size_t i = 0; i < len; i++) {
+        y[i] = encrypt((uint64_t)s[i], e, N);
     }
-    cout <<"'"<< endl;
-    string cppString(result);
-    cout << cppString<<endl;
-    return cppString;
+    string res;
+    res.resize(len * 8);
+    memcpy(&res[0], y, len * 8);
+    return res;
 }
+string decrypt(const string& s, uint64_t d, uint64_t N) {
+    size_t len = s.length();
+    
+    uint64_t y[len / 8];
+    memcpy(y, &s[0], len);
+        
+    string res;
+    res.resize(len / 8);
+
+    for(size_t i = 0; i < len / 8; i++) {
+        res[i] = (char)decrypt(y[i], d, N);
+    }
+    return res;
+}
+vector <uint64_t> factorize(uint64_t n) {
+    uint64_t up = (uint64_t)sqrt(n) + 1; // upper bound
+    vector<uint64_t> v;
+    for(uint64_t i = 2; i < up; i++) {
+        if(n % i == 0) {
+            v.push_back(i);
+            v.push_back(n / i);
+        }
+    }
+    return v;
+    
+} // returns vector od divisors
+string hack(const string& s, uint64_t e, uint64_t N) {
+    // calculating private key
+    vector <uint64_t> v = factorize(N);
+    uint64_t p = v[0], q = v[1];
+    uint64_t d = (uint64_t)inverse((int64_t)e, (int64_t)(p - 1)*(q-1));
+    
+    return decrypt(s, d, N);
+} // decrypt using only public key
 
 int main() {
     uint64_t N, p, q, e, d;
@@ -137,58 +155,46 @@ int main() {
     */
     N = p*q;
     d = (uint64_t)inverse((int64_t)e, (int64_t)(p - 1)*(q-1));
-    cout << "d = "<< d << endl;
-    cout << "N = " << N << endl;
-
-    uint64_t x = 97;
-    uint64_t y = encrypt(x, e, N);
-    uint64_t xx = decrypt(y, d, N);
-    cout << (uint64_t)x << endl << (uint64_t)y << endl << (uint64_t)xx << endl;
-
-    string s = "aaabbcb";
-    cout << "s='" << s << "'" << endl;
-    string ss = encrypt(s, e, N);
-    cout << "ss='" << ss << "'" << endl;
-    string sss = decrypt(ss, e, N);
-    cout << "sss='" << sss << "'" << endl;
+    
+    // reading from file
+    ifstream fin("input.txt");
+    ofstream fenc("encrypt.txt");
+    ofstream fdec("decrypt.txt");
+    ofstream fhack("hack.txt");
+    
+    chrono::steady_clock::time_point begin, end; 
+    
+    // reading input text
+    string tmp, text = "";
+    while(getline(fin, tmp)) {
+        text += tmp;
+    };
+    // encrypting
+    begin = std::chrono::steady_clock::now();
+    string encrypted = encrypt(text, e, N);
+    end = std::chrono::steady_clock::now();
+    // write in file
+    fenc << encrypted << endl;
+    fenc << "total elapsed time: ";
+    fenc << chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+    fenc << " microseconds";
+    // decrypting
+    begin = std::chrono::steady_clock::now();
+    string decrypted = decrypt(encrypted, d, N);
+    end = std::chrono::steady_clock::now();
+    // write in file
+    fdec << decrypted << endl;
+    fdec << "total elapsed time: ";
+    fdec << chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+    fdec << " microseconds";
+    // hacking
+    begin = std::chrono::steady_clock::now();
+    string hacked = hack(encrypted, e, N);
+    end = std::chrono::steady_clock::now();
+    // write in file
+    fhack << hacked << endl;
+    fhack << "total elapsed time: ";
+    fhack << chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+    fhack << " microseconds";
+    
 }
-
-
-/*
-
-string encrypt(const string& s, uint64_t e, uint64_t N) {
-    string result;
-    result.resize(s.length() * 8);
-    for(size_t i = 0; i < s.length(); i++) {
-        // char -> char x 8
-        cout << "original char ="<<s[i] << "="<<(uint32_t)s[i] << endl;;
-        uint64_t y = encrypt((uint64_t)s[i], e, N);
-        cout << "encrypt ="<<y<<endl;
-        for(int j = 0; j < 8; j++) {
-            cout <<"="<< ((uint32_t)((y >> (7-j)*8) & 255))<<"="<< ((uint8_t)((y >> (7-j)*8) & 255)) << endl;
-            result[i*8 + j] = (y >> (7-j)*8) & 255;
-        }
-    }
-    return result;
-}
-uint64_t decrypt(uint64_t x, uint64_t d, uint64_t N) {
-    return modPow(x, d, N);
-}
-string decrypt(const string& s, uint64_t d, uint64_t N) {
-    string result;
-    result.resize(s.length() / 8);
-    cout << "decr string="<<s<< endl;
-    for(size_t i = 0; i < s.length() / 8; i++) {
-        uint64_t x = 0;
-        for(int j = 0; j < 8; j++) {
-            cout<<"x=" << x << endl;
-            cout << "byte="<<(uint64_t)s[i*8 + j]<<endl;
-            x |= (uint64_t)s[i*8 + j] << (7 - j)*8;
-        }
-        cout << "was encrypted="<<x<<"="<<(uint8_t)x<<endl;
-        result[i] = decrypt(x, d, N);
-        cout << "wich is="<<result[i]<<endl;
-    }
-    return result;
-}
-*/
