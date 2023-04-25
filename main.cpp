@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstdint>
 #include <fstream>
 #include <string>
 #include <chrono>
@@ -42,14 +41,16 @@ int64_t inverse(int64_t a, int64_t m) {
     return a2;
 } // returns modular inverse
 
+// RSA
 uint64_t encrypt(uint64_t x, uint64_t e, uint64_t N) {
-    return modPow((uint64_t)x, e, N);
+    return modPow(x, e, N);
 }
 uint64_t decrypt(uint64_t x, uint64_t d, uint64_t N) {
     return modPow(x, d, N);
 }
-
 string encrypt(const string& s, uint64_t e, uint64_t N) {
+    // char is encrypted with a uint64_t
+    // 1 byte -> 8 bytes
     size_t len = s.length();
     uint64_t y[len];
     for(size_t i = 0; i < len; i++) {
@@ -61,14 +62,13 @@ string encrypt(const string& s, uint64_t e, uint64_t N) {
     return res;
 }
 string decrypt(const string& s, uint64_t d, uint64_t N) {
+    // 8 chars represent 1 source char
     size_t len = s.length();
-    
     uint64_t y[len / 8];
     memcpy(y, &s[0], len);
-        
+    // now 1 uint64_t -> 1 char
     string res;
     res.resize(len / 8);
-
     for(size_t i = 0; i < len / 8; i++) {
         res[i] = (char)decrypt(y[i], d, N);
     }
@@ -76,7 +76,7 @@ string decrypt(const string& s, uint64_t d, uint64_t N) {
 }
 vector <uint64_t> factorize(uint64_t n) {
     uint64_t up = (uint64_t)sqrt(n) + 1; // upper bound
-    vector<uint64_t> v;
+    vector<uint64_t> v; // vector of divisors
     for(uint64_t i = 2; i < up; i++) {
         if(n % i == 0) {
             v.push_back(i);
@@ -84,43 +84,41 @@ vector <uint64_t> factorize(uint64_t n) {
         }
     }
     return v;
-    
-} // returns vector od divisors
+
+} // returns vector of divisors
 uint64_t hack(uint64_t e, uint64_t N) {
     // calculating private key
     vector <uint64_t> v = factorize(N);
     uint64_t p = v[0], q = v[1];
     uint64_t d = (uint64_t)inverse((int64_t)e, (int64_t)(p - 1)*(q-1));
-    
+
     return d;
 } // calculating private key "d"
 
 int main() {
+    // keys
     uint64_t N, p, q, e, d;
-    p = 12004991;
-    q = 12004999;
-    e = 7;
-    /*
-    p = 5;
-    q = 7;
+    p = 2002726669;
+    q = 2002726723;
     e = 5;
-    */
     N = p*q;
     d = (uint64_t)inverse((int64_t)e, (int64_t)(p - 1)*(q-1));
-    
+
     // reading from file
     ifstream fin("input.txt");
     ofstream fenc("encrypt.txt");
     ofstream fdec("decrypt.txt");
     ofstream fhack("hack.txt");
-    
-    chrono::steady_clock::time_point begin, end, begin1, end1; 
-    
+
+    chrono::steady_clock::time_point begin, end, begin1, end1;
+
     // reading input text
     string tmp, text = "";
     while(getline(fin, tmp)) {
         text += tmp;
+        text += '\n';
     };
+    text.pop_back(); // delete extra '\n'
     // encrypting
     begin = std::chrono::steady_clock::now();
     string encrypted = encrypt(text, e, N);
@@ -153,5 +151,5 @@ int main() {
     fhack << "total elapsed time: ";
     fhack << chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
     fhack << " microseconds";
-    
+
 }
